@@ -18,6 +18,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
         name: "user_id",
         type: dynamodb.AttributeType.STRING,
       },
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
     // Created Http Api for Crud Operation of DynamoDB
@@ -47,8 +48,8 @@ export class CrudApiDynamodbStack extends cdk.Stack {
 
     // Created lambda function for Get User Data to dynamo
 
-    const getLambda = new lambda.Function(this, `${service}-${stage}-user-lambda`, {
-      functionName: `${service}-${stage}-user-lambda`,
+    const getLambda = new lambda.Function(this, `${service}-${stage}-get-lambda`, {
+      functionName: `${service}-${stage}-get-lambda`,
       runtime: lambda.Runtime.NODEJS_18_X,
       code: lambda.Code.fromAsset("lambda"),
       handler: "GetUser.handler",
@@ -56,6 +57,22 @@ export class CrudApiDynamodbStack extends cdk.Stack {
         TABLE_NAME: userTable.tableName,
       },
     });
+
+    // Created lambda function for Update User Address to dynamo
+
+    const updateAddressLambda = new lambda.Function(
+      this,
+      `${service}-${stage}-update-address-lambda`,
+      {
+        functionName: `${service}-${stage}-update-address-lambda`,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        code: lambda.Code.fromAsset("lambda"),
+        handler: "UpdateAddress.handler",
+        environment: {
+          TABLE_NAME: userTable.tableName,
+        },
+      }
+    );
 
     // Created Post User lambda function integration with api
 
@@ -69,6 +86,13 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     const getLambdaIntegration = new apigwv2_integrations.HttpLambdaIntegration(
       `${service}-${stage}-get-lambda-integration`,
       getLambda
+    );
+
+    // Created Update User Address lambda function integration with api
+
+    const updateAddressLambdaIntegration = new apigwv2_integrations.HttpLambdaIntegration(
+      `${service}-${stage}-update-address-lambda-integration`,
+      updateAddressLambda
     );
 
     // Created Route for Post Lambda function
@@ -87,9 +111,18 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       integration: getLambdaIntegration,
     });
 
+    // Created Route for Update User Address Lambda function
+
+    crudUserApi.addRoutes({
+      path: "/update-address",
+      methods: [apigwv2.HttpMethod.PUT],
+      integration: getLambdaIntegration,
+    });
+
     // Grant Full Access Of Dynamo to lambda Functions
 
     userTable.grantFullAccess(postLambda);
     userTable.grantFullAccess(getLambda);
+    userTable.grantFullAccess(updateAddressLambda);
   }
 }
