@@ -33,7 +33,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       },
     });
 
-    // Created lambda function for Post Data to dynamo
+    // Created lambda function for Post User Data to dynamo
 
     const postLambda = new lambda.Function(this, `${service}-${stage}-post-lambda`, {
       functionName: `${service}-${stage}-post-lambda`,
@@ -45,11 +45,30 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       },
     });
 
-    // Created Post lambda function integration with api
+    // Created lambda function for Get User Data to dynamo
+
+    const getLambda = new lambda.Function(this, `${service}-${stage}-user-lambda`, {
+      functionName: `${service}-${stage}-user-lambda`,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      code: lambda.Code.fromAsset("lambda"),
+      handler: "GetUser.handler",
+      environment: {
+        TABLE_NAME: userTable.tableName,
+      },
+    });
+
+    // Created Post User lambda function integration with api
 
     const postLambdaIntegration = new apigwv2_integrations.HttpLambdaIntegration(
       `${service}-${stage}-post-lambda-integration`,
       postLambda
+    );
+
+    // Created Get User lambda function integration with api
+
+    const getLambdaIntegration = new apigwv2_integrations.HttpLambdaIntegration(
+      `${service}-${stage}-get-lambda-integration`,
+      getLambda
     );
 
     // Created Route for Post Lambda function
@@ -60,8 +79,17 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       integration: postLambdaIntegration,
     });
 
+    // Created Route for Get Lambda function
+
+    crudUserApi.addRoutes({
+      path: "/get-user",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: getLambdaIntegration,
+    });
+
     // Grant Full Access Of Dynamo to lambda Functions
 
     userTable.grantFullAccess(postLambda);
+    userTable.grantFullAccess(getLambda);
   }
 }
