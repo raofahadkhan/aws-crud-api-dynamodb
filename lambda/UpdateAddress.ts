@@ -30,6 +30,7 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
   try {
     const user = await dynamodb.query(params).promise();
     const userData: any = user.Items;
+    console.log("USerDAta ==>", userData);
     const userAddress = userData.addresses.find((address: Address) => address.id === address_id);
 
     for (let key in address) {
