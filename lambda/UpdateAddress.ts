@@ -32,14 +32,14 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     const userData: any = user.Items;
     console.log("USerDAta ==>", userData);
     const userAddress = userData.addresses.find((address: Address) => address.id === address_id);
+    console.log("User Address", userAddress);
+    // for (let key in address) {
+    //   if (address.hasOwnProperty(key)) {
+    //     userAddress[0][key] = address[key];
+    //   }
+    // }
 
-    for (let key in address) {
-      if (address.hasOwnProperty(key)) {
-        userAddress[0][key] = address[key];
-      }
-    }
-
-    console.log("user Address==>", userAddress);
+    // console.log("user Address==>", userAddress);
 
     return {
       statusCode: 200,
