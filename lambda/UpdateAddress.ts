@@ -31,18 +31,38 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     const user = await dynamodb.query(params).promise();
     const userData: any = user.Items;
     console.log("USerDAta ==>", userData);
-    const userAddress = userData[0].addresses.find((address: Address) => address.id === address_id);
+    const userAddresses = userData[0].addresses;
+    const userAddress = userAddresses.find((address: Address) => address.id === address_id);
     console.log("User Address", userAddress);
 
     for (let key in address) {
       if (userAddress.hasOwnProperty(key)) {
         userAddress[key] = address[key];
       }
-      console.log("has key ==>", userAddress.hasOwnProperty(key));
-      console.log("keys ==>", key);
+    }
+
+    const addressToReplace = userAddresses.findIndex(
+      (address: Address) => address.id === userAddress.id
+    );
+
+    if (addressToReplace !== -1) {
+      userAddresses[addressToReplace] = userAddress;
     }
 
     console.log("user Address after updation==>", userAddress);
+    console.log("user Addresses after updation after replacing==>", userAddresses);
+
+    const updateAddressparams = {
+      TableName: process.env.TABLE_NAME,
+      Key: {
+        user_id: user_id,
+      },
+      UpdateExpression: "SET addresses = :addressesValue",
+      ExpressionAttributeValues: {
+        ":addressesValue": userAddresses,
+      },
+      ReturnValues: "ALL_NEW",
+    };
 
     return {
       statusCode: 200,
