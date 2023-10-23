@@ -12,6 +12,8 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
 
   const requestBody = JSON.parse(event.body!);
 
+  console.log("fahad  ==>", requestBody);
+
   let { user_id, address_id, address } = requestBody;
 
   const params = {
@@ -27,7 +29,7 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
 
   try {
     const user = await dynamodb.query(params).promise();
-    const userData: any = user.Items!;
+    const userData: any = user.Items;
     const userAddress = userData.addresses.find((address: Address) => address.id === address_id);
 
     for (let key in address) {
