@@ -12,7 +12,7 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
 
   const requestBody = JSON.parse(event.body!);
 
-  let { name, age, email, addresses } = requestBody;
+  let { name, age, email, addresses, isStudent } = requestBody;
 
   for (let address of addresses) {
     address["id"] = uuidv4();
@@ -27,6 +27,7 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
       age: age,
       email: email,
       addresses: addresses,
+      isStudent: isStudent,
     },
   };
 

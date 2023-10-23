@@ -11,15 +11,20 @@ const createUserEventValidation = (event: APIGatewayProxyEventV2): null | Respon
 
   let requestBody = JSON.parse(event.body);
 
-  let { name, age, email, addresses } = requestBody;
+  let { name, age, email, addresses, isStudent } = requestBody;
 
-  if (!name || !age || !email) {
+  if (!name || !age || !email || !isStudent) {
     return responseObject(HttpStatusCode.BadRequest, {
       error: "Bad Request: Required credentials are missing.",
     });
   }
 
-  if (typeof name !== "string" || typeof age !== "number" || typeof email !== "string") {
+  if (
+    typeof name !== "string" ||
+    typeof age !== "number" ||
+    typeof email !== "string" ||
+    typeof isStudent !== "boolean"
+  ) {
     return responseObject(HttpStatusCode.BadRequest, {
       error: "Bad Request: Invalid credentials found.",
     });
