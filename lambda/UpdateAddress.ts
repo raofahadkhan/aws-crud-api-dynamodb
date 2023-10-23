@@ -1,7 +1,7 @@
 import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 import * as AWS from "aws-sdk";
 import updateAddressEventValidation from "./helpers/updateAddressEventValidation";
-import { User } from "./helpers/types";
+import { Address } from "./helpers/types";
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
@@ -27,8 +27,17 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
 
   try {
     const user = await dynamodb.query(params).promise();
-    const userData = user.Items!;
-    console.log("User data ==>", userData);
+    const userData: any = user.Items!;
+    const userAddress = userData.addresses.find((address: Address) => address.id === address_id);
+
+    for (let key in address) {
+      if (address.hasOwnProperty(key)) {
+        userAddress[0][key] = address[key];
+      }
+    }
+
+    console.log("user Address==>", userAddress);
+
     return {
       statusCode: 200,
       body: JSON.stringify({ data: "User Created Successfully" }),
