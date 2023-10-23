@@ -116,7 +116,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     crudUserApi.addRoutes({
       path: "/update-address",
       methods: [apigwv2.HttpMethod.PUT],
-      integration: getLambdaIntegration,
+      integration: updateAddressLambdaIntegration,
     });
 
     // Grant Full Access Of Dynamo to lambda Functions
