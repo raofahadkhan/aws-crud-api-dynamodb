@@ -13,32 +13,35 @@ const createUserEventValidation = (event: APIGatewayProxyEventV2): null | Respon
 
   let { name, age, email, addresses } = requestBody;
 
-  if (
-    !name ||
-    !age ||
-    !email ||
-    !addresses.street ||
-    !addresses.city ||
-    !addresses.state ||
-    !addresses.postalCode
-  ) {
+  if (!name || !age || !email) {
     return responseObject(HttpStatusCode.BadRequest, {
       error: "Bad Request: Required credentials are missing.",
     });
   }
 
-  if (
-    typeof name !== "string" ||
-    typeof age !== "number" ||
-    typeof email !== "string" ||
-    typeof addresses.street !== "string" ||
-    typeof addresses.city !== "string" ||
-    typeof addresses.state !== "string" ||
-    typeof addresses.postalCode !== "string"
-  ) {
+  if (typeof name !== "string" || typeof age !== "number" || typeof email !== "string") {
     return responseObject(HttpStatusCode.BadRequest, {
       error: "Bad Request: Invalid credentials found.",
     });
+  }
+
+  for (let address of addresses) {
+    if (!address.street || !address.city || !address.state || !address.postalCode) {
+      return responseObject(HttpStatusCode.BadRequest, {
+        error: "Bad Request: Required credentials are missing.",
+      });
+    }
+
+    if (
+      typeof address.street !== "string" ||
+      typeof address.city !== "string" ||
+      typeof address.state !== "string" ||
+      typeof address.postalCode !== "string"
+    ) {
+      return responseObject(HttpStatusCode.BadRequest, {
+        error: "Bad Request: Invalid credentials found.",
+      });
+    }
   }
 
   return null;
