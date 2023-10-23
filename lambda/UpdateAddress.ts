@@ -53,7 +53,7 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     console.log("user Addresses after updation after replacing==>", userAddresses);
 
     const updateAddressparams = {
-      TableName: process.env.TABLE_NAME,
+      TableName: process.env.TABLE_NAME!,
       Key: {
         user_id: user_id,
       },
@@ -64,9 +64,11 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
       ReturnValues: "ALL_NEW",
     };
 
+    await dynamodb.update(updateAddressparams).promise();
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ data: "User Created Successfully" }),
+      body: JSON.stringify({ data: "Data Updated Successfully" }),
     };
   } catch (error) {
     return {
