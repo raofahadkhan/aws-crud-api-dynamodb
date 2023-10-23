@@ -1,0 +1,63 @@
+name: CI / CD
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+  workflow_dispatch:
+
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # SETUP
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Installing Nodejs
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: "18"
+
+      - name: Installing AWS-CDK
+        run: npm install -g aws-cdk
+
+      # INSTALL ROOT DEPENDENCIES
+      - name: Install App Dependencies
+        run: npm install --force
+
+      # INSTALL LAMBDA DEPENDENCIES
+      - name: Install Lambda Dependencies
+        run: |
+          cd lambda
+          npm install --force
+          cd ..
+
+      # BUILD
+      - name: Build (using Typescript)
+        run: npm run build
+
+      # GENERATE CLOUD_FORMATION
+      - name: Create AWS CloudFormation of All Stacks
+        run: cdk synth
+
+      # DEPLOYMENT
+      - name: Deploy Dev Stacks
+        if: "!contains(github.ref,'main')"
+        run: |
+          STAGE=dev cdk deploy crud-api-dynamodb-dev --require-approval never
+
+      - name: Deploy Main Stacks
+        if: contains(github.ref,'main')
+        run: |
+          STAGE=main cdk deploy crud-api-dynamodb-main --require-approval never
