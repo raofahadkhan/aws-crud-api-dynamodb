@@ -35,9 +35,9 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
     console.log("User Address", userAddress);
 
     for (let key in address) {
-      // if (address.hasOwnProperty(key)) {
-      //   userAddress[key] = address[key];
-      // }
+      if (userAddress.hasOwnProperty(key)) {
+        userAddress[key] = address[key];
+      }
       console.log("has key ==>", userAddress.hasOwnProperty(key));
       console.log("keys ==>", key);
     }
