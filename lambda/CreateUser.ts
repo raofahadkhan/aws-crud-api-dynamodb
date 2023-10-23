@@ -14,6 +14,10 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
 
   let { name, age, email, addresses } = requestBody;
 
+  for (let address of addresses) {
+    address["id"] = uuidv4;
+  }
+
   const params = {
     TableName: process.env.TABLE_NAME!,
     Item: {
