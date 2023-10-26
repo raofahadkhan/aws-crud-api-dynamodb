@@ -6,6 +6,7 @@ import * as apigwv2_integrations from "@aws-cdk/aws-apigatewayv2-integrations-al
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as iam from "aws-cdk-lib/aws-iam";
 
 export class CrudApiDynamodbStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -63,6 +64,15 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     // Assignment of the event source to the lambda function
 
     dynamodbStreamLambda.addEventSource(dynamodbStreamEventSource);
+
+    // Create a new IAM role for AWS Glue Crawler
+    const role = new iam.Role(this, "MyCrawlerRole", {
+      assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
+      roleName: "my-crawler-role",
+    });
+    role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSGlueServiceRole")
+    );
 
     // Created Http Api for Crud Operation of DynamoDB
 
