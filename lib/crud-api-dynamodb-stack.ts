@@ -7,6 +7,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as glue from "aws-cdk-lib/aws-glue";
 
 export class CrudApiDynamodbStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -73,6 +74,21 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     role.addManagedPolicy(
       iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSGlueServiceRole")
     );
+
+    // Create a new Glue Crawler
+    const crawler = new glue.CfnCrawler(this, "MyCrawler", {
+      name: "my_crawler",
+      role: role.roleArn,
+      databaseName: "my_database",
+      targets: {
+        s3Targets: [
+          {
+            path: `s3://${userDataBucket.bucketName}/`,
+            exclusions: [],
+          },
+        ],
+      },
+    });
 
     // Created Http Api for Crud Operation of DynamoDB
 
