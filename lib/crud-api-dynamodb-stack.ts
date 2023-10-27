@@ -4,6 +4,11 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as apigwv2_integrations from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as glue from "aws-cdk-lib/aws-glue";
+import * as athena from "aws-cdk-lib/aws-athena";
 
 export class CrudApiDynamodbStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -19,6 +24,82 @@ export class CrudApiDynamodbStack extends cdk.Stack {
         type: dynamodb.AttributeType.STRING,
       },
       removalPolicy: cdk.RemovalPolicy.RETAIN,
+      stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
+    });
+
+    // Creating s3 bucket for data storage of dynamodb
+
+    const userDataBucket = new s3.Bucket(this, `${service}-${stage}-bucket`, {
+      bucketName: `${service}-${stage}-bucket`,
+      versioned: true,
+    });
+
+    // Created a lambda function to be triggered by Dynamodb streams
+
+    const dynamodbStreamLambda = new lambda.Function(
+      this,
+      `${service}-${stage}-dynamodb-stream-lambda`,
+      {
+        functionName: `${service}-${stage}-dynamodb-stream-lambda`,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        handler: "StreamLambda.handler",
+        code: lambda.Code.fromAsset("lambda"),
+        environment: {
+          BUCKET_NAME: userDataBucket.bucketName,
+        },
+      }
+    );
+
+    // Grant Access of s3 bucket to dynamodbStreamLambda
+
+    userDataBucket.grantReadWrite(dynamodbStreamLambda);
+
+    // Created an Event source for Lambda function
+
+    const dynamodbStreamEventSource = new lambdaEventSources.DynamoEventSource(userTable, {
+      startingPosition: lambda.StartingPosition.TRIM_HORIZON,
+      batchSize: 1,
+      bisectBatchOnError: true,
+      retryAttempts: 10,
+    });
+
+    // Assignment of the event source to the lambda function
+
+    dynamodbStreamLambda.addEventSource(dynamodbStreamEventSource);
+
+    // Create a new IAM role for AWS Glue Crawler
+    const role = new iam.Role(this, "MyCrawlerRole", {
+      assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
+      roleName: "my-crawler-role",
+    });
+    role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSGlueServiceRole")
+    );
+
+    // Create a new Glue Crawler
+    const crawler = new glue.CfnCrawler(this, "MyCrawler", {
+      name: "my_crawler",
+      role: role.roleArn,
+      databaseName: "my_database",
+      targets: {
+        s3Targets: [
+          {
+            path: `s3://${userDataBucket.bucketName}/`,
+            exclusions: [],
+          },
+        ],
+      },
+    });
+
+    // Creating a new Athena data catalog
+
+    const dataCatalog = new athena.CfnDataCatalog(this, "MyDataCatalog", {
+      name: "my_data_catalog",
+      type: "GLUE",
+      description: "My data catalog for Athena",
+      parameters: {
+        "catalog-id": "961322954791", // Replace with your AWS account ID
+      },
     });
 
     // Created Http Api for Crud Operation of DynamoDB
