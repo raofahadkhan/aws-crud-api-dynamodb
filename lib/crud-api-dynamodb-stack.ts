@@ -8,6 +8,7 @@ import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as glue from "aws-cdk-lib/aws-glue";
+import * as athena from "aws-cdk-lib/aws-athena";
 
 export class CrudApiDynamodbStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -88,6 +89,14 @@ export class CrudApiDynamodbStack extends cdk.Stack {
           },
         ],
       },
+    });
+
+    // created a database in athena
+
+    const database = new (athena as any).CfnDatabase(this, "MyDatabase", {
+      name: "my_database",
+      description: "My database for JSON files",
+      catalogName: "AwsDataCatalog",
     });
 
     // Created Http Api for Crud Operation of DynamoDB
