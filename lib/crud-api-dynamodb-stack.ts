@@ -91,12 +91,15 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       },
     });
 
-    // created a database in athena
+    // Creating a new Athena data catalog
 
-    const database = new (athena as any).CfnDatabase(this, "MyDatabase", {
-      name: "my_database",
-      description: "My database for JSON files",
-      catalogName: "AwsDataCatalog",
+    const dataCatalog = new athena.CfnDataCatalog(this, "MyDataCatalog", {
+      name: "my_data_catalog",
+      type: "GLUE",
+      description: "My data catalog for Athena",
+      parameters: {
+        "catalog-id": "961322954791", // Replace with your AWS account ID
+      },
     });
 
     // Created Http Api for Crud Operation of DynamoDB
