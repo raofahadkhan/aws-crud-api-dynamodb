@@ -66,30 +66,31 @@ export class CrudApiDynamodbStack extends cdk.Stack {
 
     dynamodbStreamLambda.addEventSource(dynamodbStreamEventSource);
 
-    // Create a new IAM role for AWS Glue Crawler
-    const role = new iam.Role(this, "MyCrawlerRole", {
-      assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
-      roleName: "my-crawler-role",
-    });
-    role.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSGlueServiceRole")
-    );
+    // // Create a new IAM role for AWS Glue Crawler
+    // const role = new iam.Role(this, "MyCrawlerRole", {
+    //   assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
+    //   roleName: "my-crawler-role",
+    // });
+    // role.addManagedPolicy(
+    //   iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSGlueServiceRole")
+    // );
 
-    // Create a new Glue Crawler
-    const crawler = new glue.CfnCrawler(this, "MyCrawler", {
-      name: "my_crawler",
-      role: role.roleArn,
-      databaseName: "my_database",
-      targets: {
-        s3Targets: [
-          {
-            path: `s3://${userDataBucket.bucketName}/`,
-            exclusions: [],
-          },
-        ],
-      },
-    });
+    // // Create a new Glue Crawler
+    // const crawler = new glue.CfnCrawler(this, "MyCrawler", {
+    //   name: "my_crawler",
+    //   role: role.roleArn,
+    //   databaseName: "my_database",
+    //   targets: {
+    //     s3Targets: [
+    //       {
+    //         path: `s3://${userDataBucket.bucketName}/`,
+    //         exclusions: [],
+    //       },
+    //     ],
+    //   },
+    // });
 
+    
     // Created Http Api for Crud Operation of DynamoDB
 
     const crudUserApi = new apigwv2.HttpApi(this, `${service}-${stage}`, {
