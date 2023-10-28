@@ -67,40 +67,40 @@ export class CrudApiDynamodbStack extends cdk.Stack {
 
     dynamodbStreamLambda.addEventSource(dynamodbStreamEventSource);
 
-    // Create a new IAM role for AWS Glue Crawler
-    const role = new iam.Role(this, "MyCrawlerRole", {
-      assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
-      roleName: "my-crawler-role",
-    });
-    role.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSGlueServiceRole")
-    );
+    // // Create a new IAM role for AWS Glue Crawler
+    // const role = new iam.Role(this, "MyCrawlerRole", {
+    //   assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
+    //   roleName: "my-crawler-role",
+    // });
+    // role.addManagedPolicy(
+    //   iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSGlueServiceRole")
+    // );
 
-    // Create a new Glue Crawler
-    const crawler = new glue.CfnCrawler(this, "MyCrawler", {
-      name: "my_crawler",
-      role: role.roleArn,
-      databaseName: "my_database",
-      targets: {
-        s3Targets: [
-          {
-            path: `s3://${userDataBucket.bucketName}/`,
-            exclusions: [],
-          },
-        ],
-      },
-    });
+    // // Create a new Glue Crawler
+    // const crawler = new glue.CfnCrawler(this, "MyCrawler", {
+    //   name: "my_crawler",
+    //   role: role.roleArn,
+    //   databaseName: "my_database",
+    //   targets: {
+    //     s3Targets: [
+    //       {
+    //         path: `s3://${userDataBucket.bucketName}/`,
+    //         exclusions: [],
+    //       },
+    //     ],
+    //   },
+    // });
 
-    // Creating a new Athena data catalog
+    // // Creating a new Athena data catalog
 
-    const dataCatalog = new athena.CfnDataCatalog(this, "MyDataCatalog", {
-      name: "my_data_catalog",
-      type: "GLUE",
-      description: "My data catalog for Athena",
-      parameters: {
-        "catalog-id": "961322954791", // Replace with your AWS account ID
-      },
-    });
+    // const dataCatalog = new athena.CfnDataCatalog(this, "MyDataCatalog", {
+    //   name: "my_data_catalog",
+    //   type: "GLUE",
+    //   description: "My data catalog for Athena",
+    //   parameters: {
+    //     "catalog-id": "961322954791", // Replace with your AWS account ID
+    //   },
+    // });
 
     // Created Http Api for Crud Operation of DynamoDB
 
