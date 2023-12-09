@@ -4,18 +4,22 @@ import updateAddressEventValidation from "./helpers/updateAddressEventValidation
 import { Address } from "./helpers/types";
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
-export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
-  const updateAddressEventValidationResponse = updateAddressEventValidation(event);
-  console.log("event ===>", event);
+export const handler = async (
+  event: APIGatewayProxyEventV2
+): Promise<APIGatewayProxyResultV2> => {
+  // REQUEST VALIDATION
+  const updateAddressEventValidationResponse =
+    updateAddressEventValidation(event);
 
-  if (updateAddressEventValidationResponse) return updateAddressEventValidationResponse;
+  if (updateAddressEventValidationResponse)
+    return updateAddressEventValidationResponse;
 
+  // PARSING BODY DATA
   const requestBody = JSON.parse(event.body!);
-
-  console.log("fahad  ==>", requestBody);
 
   let { user_id, address_id, address } = requestBody;
 
+  // DYNAMODB GET OBJECT PARAMS
   const params = {
     TableName: process.env.TABLE_NAME!,
     KeyConditionExpression: "#pk = :pk",
@@ -28,22 +32,24 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
   };
 
   try {
+    // GETTING OBJECTS FROM DYNAMODB
     const user = await dynamodb.query(params).promise();
     const userData: any = user.Items;
-    console.log("USerDAta ==>", userData);
-    const userAddress = userData.addresses.find((address: Address) => address.id === address_id);
 
+    const userAddress = userData.addresses.find(
+      (address: Address) => address.id === address_id
+    );
+
+    // CHECKING IF THE ADDRESS IS THERE IF YES THAN UPDATE
     for (let key in address) {
       if (address.hasOwnProperty(key)) {
         userAddress[0][key] = address[key];
       }
     }
 
-    console.log("user Address==>", userAddress);
-
     return {
       statusCode: 200,
-      body: JSON.stringify({ data: "User Created Successfully" }),
+      body: JSON.stringify({ data: userAddress }),
     };
   } catch (error) {
     return {

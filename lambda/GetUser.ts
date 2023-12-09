@@ -3,16 +3,20 @@ import * as AWS from "aws-sdk";
 import getUserEventValidation from "./helpers/getUserEventValidation";
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
-export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
+export const handler = async (
+  event: APIGatewayProxyEventV2
+): Promise<APIGatewayProxyResultV2> => {
+  // REQUEST VALIDATION
   const getUserEventValidationResponse = getUserEventValidation(event);
-  console.log("event ===>", event);
 
   if (getUserEventValidationResponse) return getUserEventValidationResponse;
 
+  // BODY DATA PARSING
   const requestBody = JSON.parse(event.body!);
 
   let { user_id } = requestBody;
 
+  // DYNAMODB GET OBJECT PARAMS
   const params = {
     TableName: process.env.TABLE_NAME!,
     KeyConditionExpression: "#pk = :pk",
@@ -25,6 +29,7 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
   };
 
   try {
+    // GETTING OBJECTS FROM DYNAMODB
     const items = await dynamodb.query(params).promise();
 
     return {
