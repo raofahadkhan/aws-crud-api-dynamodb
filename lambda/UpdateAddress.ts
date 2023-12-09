@@ -36,6 +36,7 @@ export const handler = async (
     const user = await dynamodb.query(params).promise();
     const userData: any = user.Items;
 
+    // GETTING ADDRESS FROM USER ADDRESS
     const userAddress = userData.addresses.find(
       (address: Address) => address.id === address_id
     );
