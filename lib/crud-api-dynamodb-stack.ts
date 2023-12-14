@@ -192,6 +192,13 @@ export class CrudApiDynamodbStack extends cdk.Stack {
           "glue:GetPartition",
           "glue:GetPartitions",
           "glue:BatchGetPartition",
+          "athena:StartQueryExecution",
+          "athena:GetQueryExecution",
+          "athena:GetQueryResults",
+          "athena:GetWorkGroup",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket",
         ],
         resources: ["*"], // Restrict as necessary
       })
