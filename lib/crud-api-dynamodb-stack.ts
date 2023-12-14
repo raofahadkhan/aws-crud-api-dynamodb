@@ -221,7 +221,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     );
 
     // ===============================================================================
-    // APIGATEWAY: CREATED HTTP API FOR CRUD OPERATION OF USERS
+    // APIGATEWAY: CREATED HTTP API FOR CRUD OPERATION ON USERS TABLE
     // ===============================================================================
 
     const crudUserApi = new apigwv2.HttpApi(this, `${service}-${stage}`, {
