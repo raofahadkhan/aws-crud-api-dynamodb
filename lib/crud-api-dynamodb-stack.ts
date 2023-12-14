@@ -1,14 +1,13 @@
-import * as cdk from "aws-cdk-lib";
-import { Construct } from "constructs";
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as apigwv2_integrations from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
+import * as cdk from "aws-cdk-lib";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import { Construct } from "constructs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as glue from "aws-cdk-lib/aws-glue";
-import * as athena from "aws-cdk-lib/aws-athena";
 
 export class CrudApiDynamodbStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -78,146 +77,48 @@ export class CrudApiDynamodbStack extends cdk.Stack {
 
     dynamodbStreamLambda.addEventSource(dynamodbStreamEventSource);
 
-    // ===============================================================================
-    // IAM: CREATED IAM ROLE FOR GLUE
-    // ===============================================================================
-
-    const glueRole = new iam.Role(this, `${service}-${stage}-glue-role`, {
+    // Create IAM Role for AWS Glue
+    const glueRole = new iam.Role(this, "GlueRole", {
       assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName(
-          "service-role/AWSGlueServiceRole"
-        ),
-        iam.ManagedPolicy.fromAwsManagedPolicyName(
-          "AmazonDynamoDBReadOnlyAccess"
-        ),
-      ],
+      description: "Role for AWS Glue to access S3 and Glue services",
     });
 
-    const glueS3Policy = new iam.PolicyStatement({
+    // Policy to allow Glue to access the specific S3 bucket
+    const s3Policy = new iam.PolicyStatement({
       actions: [
-        "s3:GetObject", // Permissions to read data from S3
-        "s3:PutObject", // Permissions to write data to S3
-        "s3:DeleteObject", // Optional: If you want to allow Glue to delete objects
-        "s3:ListBucket", // Permissions to list items in the bucket
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket",
       ],
+      // Replace with your S3 bucket ARN
       resources: [
-        `arn:aws:s3:::${userDataBucket.bucketName}/*`, // Grant permissions for the specific bucket
-        `arn:aws:s3:::${userDataBucket.bucketName}`, // Include the bucket itself for ListBucket permission
+        "arn:aws:s3:::your-bucket-name/*",
+        "arn:aws:s3:::your-bucket-name",
       ],
     });
+    glueRole.addToPolicy(s3Policy);
 
-    // Attach the S3 policy to the Glue role
-    glueRole.addToPolicy(glueS3Policy);
-
-    // ===============================================================================
-    // GLUE: CREATED A GLUE DATABASE
-    // ===============================================================================
-
-    const glueDatabase = new glue.CfnDatabase(
-      this,
-      `${service}-${stage}-glue-database`,
-      {
-        catalogId: cdk.Aws.ACCOUNT_ID,
-        databaseInput: {
-          name: "my_glue_database",
-        },
-      }
-    );
-
-    // ===============================================================================
-    // GLUE: CREATED A GLUE CRAWLER
-    // ===============================================================================
-
-    const crawler = new glue.CfnCrawler(this, `${service}-${stage}-crawler`, {
-      databaseName: glueDatabase.ref,
-      role: glueRole.roleArn,
-      targets: {
-        s3Targets: [{ path: `s3://${userDataBucket.bucketName}/` }],
-        dynamoDbTargets: [{ path: userTable.tableName }],
-      },
+    // Policy for AWS Glue service actions
+    const glueServicePolicy = new iam.PolicyStatement({
+      actions: [
+        "glue:Get*",
+        "glue:Put*",
+        "glue:Create*",
+        "glue:Update*",
+        "glue:Delete*",
+        "glue:BatchCreatePartition",
+        "glue:BatchGetPartition",
+      ],
+      resources: ["*"],
     });
+    glueRole.addToPolicy(glueServicePolicy);
 
-    // ===============================================================================
-    // GLUE: CREATED A GLUE TABLE
-    // ===============================================================================
-
-    new glue.CfnTable(this, `${service}-${stage}-glue-table`, {
-      catalogId: cdk.Aws.ACCOUNT_ID,
-      databaseName: glueDatabase.ref,
-      tableInput: {
-        name: userTable.tableName,
-        storageDescriptor: {
-          columns: [
-            { name: "user_id", type: "string" },
-            { name: "name", type: "string" },
-            { name: "age", type: "string" },
-            { name: "email", type: "string" },
-            // { name: "address", type: "string" },
-          ],
-          location: `dynamodb://${userTable.tableName}`,
-        },
-        tableType: "EXTERNAL_TABLE",
-        parameters: {
-          "dynamodb.table.name": userTable.tableName,
-          classification: "dynamodb",
-        },
-      },
-    });
-
-    // Athena Workgroup Setup
-    const athenaWorkgroup = new athena.CfnWorkGroup(
-      this,
-      `${service}-${stage}-athena-workgroup`,
-      {
-        name: `${service}-${stage}-athena-workgroup`,
-        state: "ENABLED",
-        description: "Workgroup for querying DynamoDB data in S3",
-        workGroupConfiguration: {
-          resultConfiguration: {
-            outputLocation: `s3://${userDataBucket.bucketName}/query-results`,
-            encryptionConfiguration: {
-              encryptionOption: "SSE_S3", // or "SSE_KMS" for KMS-managed keys
-              // kmsKey: "your-kms-key-arn" // Uncomment if using SSE_KMS
-            },
-          },
-          enforceWorkGroupConfiguration: true,
-          publishCloudWatchMetricsEnabled: true,
-          // Additional configurations like data usage limits
-        },
-      }
-    );
-
-    // IAM Role for Athena to Access Glue Data Catalog and S3
-    const athenaAccessRole = new iam.Role(
-      this,
-      `${service}-${stage}-athena-access-role`,
-      {
-        assumedBy: new iam.ServicePrincipal("athena.amazonaws.com"),
-      }
-    );
-
-    // Attach policies to the role
-    athenaAccessRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: [
-          "glue:GetDatabase",
-          "glue:GetDatabases",
-          "glue:GetTable",
-          "glue:GetTables",
-          "glue:GetPartition",
-          "glue:GetPartitions",
-          "glue:BatchGetPartition",
-          "athena:StartQueryExecution",
-          "athena:GetQueryExecution",
-          "athena:GetQueryResults",
-          "athena:GetWorkGroup",
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:ListBucket",
-        ],
-        resources: ["*"], // Restrict as necessary
-      })
+    // Attach AWS managed policy for Glue Service Role
+    glueRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName(
+        "service-role/AWSGlueServiceRole"
+      )
     );
 
     // ===============================================================================
@@ -330,7 +231,6 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     // ===============================================================================
 
     userDataBucket.grantReadWrite(dynamodbStreamLambda);
-    userDataBucket.grantReadWrite(glueRole); // For Glue to read from S3
     userTable.grantFullAccess(postLambda);
     userTable.grantFullAccess(getLambda);
     userTable.grantFullAccess(updateAddressLambda);
