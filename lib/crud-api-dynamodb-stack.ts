@@ -314,7 +314,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     // ===============================================================================
 
     userDataBucket.grantReadWrite(dynamodbStreamLambda);
-    userDataBucket.grantRead(glueRole); // For Glue to read from S3
+    userDataBucket.grantReadWrite(glueRole); // For Glue to read from S3
     userTable.grantFullAccess(postLambda);
     userTable.grantFullAccess(getLambda);
     userTable.grantFullAccess(updateAddressLambda);
