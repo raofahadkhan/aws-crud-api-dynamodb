@@ -94,8 +94,8 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       ],
       // Replace with your S3 bucket ARN
       resources: [
-        "arn:aws:s3:::your-bucket-name/*",
-        "arn:aws:s3:::your-bucket-name",
+        "arn:aws:s3:::crud-api-dynamodb-dev-bucket/*",
+        "arn:aws:s3:::crud-api-dynamodb-dev-bucket",
       ],
     });
     glueRole.addToPolicy(s3Policy);
