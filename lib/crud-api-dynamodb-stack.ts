@@ -29,6 +29,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
           type: dynamodb.AttributeType.STRING,
         },
         removalPolicy: cdk.RemovalPolicy.DESTROY,
+        billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
         stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
       }
     );
