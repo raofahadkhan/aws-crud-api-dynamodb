@@ -122,6 +122,16 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     );
 
     // ===============================================================================
+    // GLUE: Create a Glue Database for cataloging tables
+    // ===============================================================================
+    const glueDatabase = new glue.CfnDatabase(this, "GlueDatabase", {
+      catalogId: cdk.Aws.ACCOUNT_ID,
+      databaseInput: {
+        name: "my_glue_database", // Replace with your desired database name
+      },
+    });
+
+    // ===============================================================================
     // APIGATEWAY: CREATED HTTP API FOR CRUD OPERATION ON USERS TABLE
     // ===============================================================================
 
