@@ -78,7 +78,10 @@ export class CrudApiDynamodbStack extends cdk.Stack {
 
     dynamodbStreamLambda.addEventSource(dynamodbStreamEventSource);
 
-    // Create an IAM role for Glue
+    // ===============================================================================
+    // IAM: CREATED IAM ROLE FOR GLUE
+    // ===============================================================================
+
     const glueRole = new iam.Role(this, `${service}-${stage}-glue-role`, {
       assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
       managedPolicies: [
@@ -89,6 +92,60 @@ export class CrudApiDynamodbStack extends cdk.Stack {
           "AmazonDynamoDBReadOnlyAccess"
         ),
       ],
+    });
+
+    // ===============================================================================
+    // GLUE: CREATED A GLUE DATABASE
+    // ===============================================================================
+
+    const glueDatabase = new glue.CfnDatabase(
+      this,
+      `${service}-${stage}-glue-database`,
+      {
+        catalogId: cdk.Aws.ACCOUNT_ID,
+        databaseInput: {
+          name: "my_glue_database",
+        },
+      }
+    );
+
+    // ===============================================================================
+    // GLUE: CREATED A GLUE CRAWLER
+    // ===============================================================================
+
+    const crawler = new glue.CfnCrawler(this, `${service}-${stage}-crawler`, {
+      databaseName: glueDatabase.ref,
+      role: glueRole.roleArn,
+      targets: {
+        dynamoDbTargets: [{ path: userTable.tableName }],
+      },
+    });
+
+    // ===============================================================================
+    // GLUE: CREATED A GLUE TABLE
+    // ===============================================================================
+
+    new glue.CfnTable(this, `${service}-${stage}-glue-table`, {
+      catalogId: cdk.Aws.ACCOUNT_ID,
+      databaseName: glueDatabase.ref,
+      tableInput: {
+        name: userTable.tableName,
+        storageDescriptor: {
+          columns: [
+            { name: "user_id", type: "string" },
+            { name: "name", type: "string" },
+            { name: "age", type: "string" },
+            { name: "email", type: "string" },
+            // { name: "address", type: "string" },
+          ],
+          location: `dynamodb://${userTable.tableName}`,
+        },
+        tableType: "EXTERNAL_TABLE",
+        parameters: {
+          "dynamodb.table.name": userTable.tableName,
+          classification: "dynamodb",
+        },
+      },
     });
 
     // ===============================================================================
