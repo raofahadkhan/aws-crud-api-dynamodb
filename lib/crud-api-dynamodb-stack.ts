@@ -132,6 +132,22 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     });
 
     // ===============================================================================
+    // GLUE: Create a Crawler for JSON data in S3
+    // ===============================================================================
+    const jsonCrawler = new glue.CfnCrawler(this, "JsonDataCrawler", {
+      role: glueRole.roleArn,
+      databaseName: glueDatabase.ref,
+      targets: {
+        s3Targets: [
+          {
+            path: `s3://${userDataBucket.bucketName}/`, // Path to the root of the S3 bucket
+          },
+        ],
+      },
+      // Define other properties like schedule, crawler name, etc., as needed
+    });
+
+    // ===============================================================================
     // APIGATEWAY: CREATED HTTP API FOR CRUD OPERATION ON USERS TABLE
     // ===============================================================================
 
