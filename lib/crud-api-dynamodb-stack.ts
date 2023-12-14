@@ -117,7 +117,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       databaseName: glueDatabase.ref,
       role: glueRole.roleArn,
       targets: {
-        s3Targets: [{ path: `s3://${userDataBucket.bucketName}` }],
+        s3Targets: [{ path: `s3://${userDataBucket.bucketName}/` }],
         dynamoDbTargets: [{ path: userTable.tableName }],
       },
     });
@@ -307,6 +307,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     // ===============================================================================
 
     userDataBucket.grantReadWrite(dynamodbStreamLambda);
+    userDataBucket.grantRead(glueRole); // For Glue to read from S3
     userTable.grantFullAccess(postLambda);
     userTable.grantFullAccess(getLambda);
     userTable.grantFullAccess(updateAddressLambda);
