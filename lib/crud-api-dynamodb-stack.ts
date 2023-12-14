@@ -260,5 +260,13 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     userTable.grantFullAccess(postLambda);
     userTable.grantFullAccess(getLambda);
     userTable.grantFullAccess(updateAddressLambda);
+
+    //==================================================================
+    // Output API Gateway URL
+    //==================================================================
+
+    new cdk.CfnOutput(this, "ApiGatewayUrl", {
+      value: crudUserApi.url!,
+    });
   }
 }
