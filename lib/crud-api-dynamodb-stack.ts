@@ -117,6 +117,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       databaseName: glueDatabase.ref,
       role: glueRole.roleArn,
       targets: {
+        s3Targets: [{ path: `s3://${userDataBucket.bucketName}` }],
         dynamoDbTargets: [{ path: userTable.tableName }],
       },
     });
@@ -147,6 +148,54 @@ export class CrudApiDynamodbStack extends cdk.Stack {
         },
       },
     });
+
+    // Athena Workgroup Setup
+    const athenaWorkgroup = new athena.CfnWorkGroup(
+      this,
+      `${service}-${stage}-athena-workgroup`,
+      {
+        name: `${service}-${stage}-athena-workgroup`,
+        state: "ENABLED",
+        description: "Workgroup for querying DynamoDB data in S3",
+        workGroupConfiguration: {
+          resultConfiguration: {
+            outputLocation: `s3://${userDataBucket.bucketName}/query-results`,
+            encryptionConfiguration: {
+              encryptionOption: "SSE_S3", // or "SSE_KMS" for KMS-managed keys
+              // kmsKey: "your-kms-key-arn" // Uncomment if using SSE_KMS
+            },
+          },
+          enforceWorkGroupConfiguration: true,
+          publishCloudWatchMetricsEnabled: true,
+          // Additional configurations like data usage limits
+        },
+      }
+    );
+
+    // IAM Role for Athena to Access Glue Data Catalog and S3
+    const athenaAccessRole = new iam.Role(
+      this,
+      `${service}-${stage}-athena-access-role`,
+      {
+        assumedBy: new iam.ServicePrincipal("athena.amazonaws.com"),
+      }
+    );
+
+    // Attach policies to the role
+    athenaAccessRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "glue:GetDatabase",
+          "glue:GetDatabases",
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:GetPartition",
+          "glue:GetPartitions",
+          "glue:BatchGetPartition",
+        ],
+        resources: ["*"], // Restrict as necessary
+      })
+    );
 
     // ===============================================================================
     // APIGATEWAY: CREATED HTTP API FOR CRUD OPERATION OF USERS
