@@ -7,6 +7,7 @@ import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as athena from "aws-cdk-lib/aws-athena";
 import * as glue from "aws-cdk-lib/aws-glue";
 
 export class CrudApiDynamodbStack extends cdk.Stack {
@@ -165,6 +166,22 @@ export class CrudApiDynamodbStack extends cdk.Stack {
         ],
       },
       // Define other properties like schedule, crawler name, etc., as needed
+    });
+
+    // Create an Athena Workgroup
+    const workgroup = new athena.CfnWorkGroup(this, "AthenaWorkgroup", {
+      name: "your-workgroup-name", // Replace with your workgroup name
+      recursiveDeleteOption: false, // Set to true if you want query results to be deleted when the workgroup is deleted
+      state: "ENABLED", // You can set it to 'DISABLED' initially if needed
+      description: "Your Athena Workgroup", // Replace with your workgroup description
+      workGroupConfiguration: {
+        // Configure query result location
+        enforceWorkGroupConfiguration: true,
+        resultConfiguration: {
+          outputLocation: `s3://${userDataBucket.bucketName}/athena-results/`,
+        },
+        // You can configure other workgroup settings here
+      },
     });
 
     // ===============================================================================
