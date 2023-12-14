@@ -33,7 +33,7 @@ export const handler = async (
       name: name,
       age: age,
       email: email,
-      addresses: addresses,
+      // addresses: addresses,
     },
   };
 

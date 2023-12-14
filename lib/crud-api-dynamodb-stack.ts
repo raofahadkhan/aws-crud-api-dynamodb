@@ -131,6 +131,26 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       },
     });
 
+    const glueTable = new glue.CfnTable(this, "GlueTable", {
+      databaseName: glueDatabase.ref,
+      catalogId: cdk.Aws.ACCOUNT_ID,
+      tableInput: {
+        name: "my-glue-table",
+        // Define the table schema here based on your JSON data structure
+        storageDescriptor: {
+          columns: [
+            { name: "user_id", type: "string" },
+            { name: "name", type: "string" },
+            { name: "age", type: "string" },
+            { name: "email", type: "string" },
+          ],
+          location: `s3://${userDataBucket.bucketName}/`, // Specify the S3 location of your data
+          // Add any other storage properties as needed
+        },
+        // Define other table properties as needed
+      },
+    });
+
     // ===============================================================================
     // GLUE: Create a Crawler for JSON data in S3
     // ===============================================================================
