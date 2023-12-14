@@ -94,6 +94,22 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       ],
     });
 
+    const glueS3Policy = new iam.PolicyStatement({
+      actions: [
+        "s3:GetObject", // Permissions to read data from S3
+        "s3:PutObject", // Permissions to write data to S3
+        "s3:DeleteObject", // Optional: If you want to allow Glue to delete objects
+        "s3:ListBucket", // Permissions to list items in the bucket
+      ],
+      resources: [
+        `arn:aws:s3:::${userDataBucket.bucketName}/*`, // Grant permissions for the specific bucket
+        `arn:aws:s3:::${userDataBucket.bucketName}`, // Include the bucket itself for ListBucket permission
+      ],
+    });
+
+    // Attach the S3 policy to the Glue role
+    glueRole.addToPolicy(glueS3Policy);
+
     // ===============================================================================
     // GLUE: CREATED A GLUE DATABASE
     // ===============================================================================
