@@ -78,8 +78,11 @@ export class CrudApiDynamodbStack extends cdk.Stack {
 
     dynamodbStreamLambda.addEventSource(dynamodbStreamEventSource);
 
-    // Create IAM Role for AWS Glue
-    const glueRole = new iam.Role(this, "GlueRole", {
+    // ===============================================================================
+    // IAM: Created IAM POLICIES FOR GLUE AND ATHENA
+    // ===============================================================================
+
+    const glueRole = new iam.Role(this, `${service}-${stage}-glue-role`, {
       assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
       description: "Role for AWS Glue to access S3 and Glue services",
       inlinePolicies: {
@@ -119,8 +122,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       ],
     });
 
-    // Create IAM Role for Athena
-    const athenaRole = new iam.Role(this, "AthenaRole", {
+    const athenaRole = new iam.Role(this, `${service}-${stage}-athena-role`, {
       assumedBy: new iam.ServicePrincipal("athena.amazonaws.com"),
       description: "Role for Athena to access specific S3 bucket",
       inlinePolicies: {
@@ -139,85 +141,58 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     });
 
     // ===============================================================================
-    // GLUE: Create a Glue Database for cataloging tables
+    // GLUE: CREATED A DATABASE IN GLUE
     // ===============================================================================
-    const glueDatabase = new glue.CfnDatabase(this, "GlueDatabase", {
-      catalogId: cdk.Aws.ACCOUNT_ID,
-      databaseInput: {
-        name: "my_glue_database", // Replace with your desired database name
-      },
-    });
 
-    // const glueTable = new glue.CfnTable(this, "GlueTable", {
-    //   databaseName: glueDatabase.ref,
-    //   catalogId: cdk.Aws.ACCOUNT_ID,
-    //   tableInput: {
-    //     name: "my-gluetable",
-    //     // Define the table schema here based on your JSON data structure
-    //     storageDescriptor: {
-    //       columns: [
-    //         { name: "user_id", type: "string" },
-    //         { name: "name", type: "string" },
-    //         { name: "age", type: "string" },
-    //         { name: "email", type: "string" },
-    //       ],
-    //       // location: `s3://${userDataBucket.bucketName}/data-lake/`, // Specify the S3 location of your data
-    //       // Add any other storage properties as needed
-    //     },
-    //     tableType: "EXTERNAL_TABLE",
-    //     // Define other table properties as needed
-    //   },
-    // });
+    const glueDatabase = new glue.CfnDatabase(
+      this,
+      `${service}-${stage}-glue-database`,
+      {
+        catalogId: cdk.Aws.ACCOUNT_ID,
+        databaseInput: {
+          name: `${service}-${stage}-glue-database`,
+        },
+      }
+    );
 
     // ===============================================================================
-    // GLUE: Create a Crawler for JSON data in S3
+    // GLUE: CREATED A GLUE CRAWLER
     // ===============================================================================
-    const jsonCrawler = new glue.CfnCrawler(this, "JsonDataCrawler", {
+
+    new glue.CfnCrawler(this, `${service}-${stage}-glue-crawler`, {
       role: glueRole.roleArn,
       databaseName: glueDatabase.ref,
       targets: {
         s3Targets: [
           {
-            path: `s3://${userDataBucket.bucketName}/data-lake/`, // Path to the root of the S3 bucket
+            path: `s3://${userDataBucket.bucketName}/data-lake/`,
           },
         ],
       },
       schedule: {
-        // scheduleExpression: "cron(0 0 * * ? *)", // Every day at midnight UTC
-        scheduleExpression: "cron(*/5 * * * ? *)", // Every 5 minutes
+        scheduleExpression: "cron(0 0 * * ? *)", // Every day at midnight UTC
+        // scheduleExpression: "cron(*/5 * * * ? *)", // Every 5 minutes
       },
-      // Define other properties like schedule, crawler name, etc., as needed
     });
-    // const queryResultsLocation = `s3://${userDataBucket.bucketName}/athena-query-results/`; // Replace with your actual S3 bucket URL
-    // // Get the AWS account ID
-    // const ownerAccountId = cdk.Aws.ACCOUNT_ID;
-    // Create an Athena Workgroup
-    const workgroup = new athena.CfnWorkGroup(this, "AthenaWorkgroup", {
-      name: "your-workgroup-name", // Replace with your workgroup name
+
+    // ===============================================================================
+    // ATHENA: CREATE A WORK GROUP IN ATHENA
+    // ===============================================================================
+
+    new athena.CfnWorkGroup(this, `${service}-${stage}-athena-work-group`, {
+      name: `${service}-${stage}-athena-work-group`,
       recursiveDeleteOption: false, // Set to true if you want query results to be deleted when the workgroup is deleted
-      state: "ENABLED", // You can set it to 'DISABLED' initially if needed
-      description: "Your Athena Workgroup", // Replace with your workgroup description
+      state: "ENABLED",
+      description:
+        "This work group is responsible for querying users data from athena",
       workGroupConfiguration: {
-        // Configure query result location
         enforceWorkGroupConfiguration: true,
         resultConfiguration: {
           outputLocation: `s3://${userDataBucket.bucketName}/athena-query-results/`,
           expectedBucketOwner: cdk.Aws.ACCOUNT_ID,
         },
         publishCloudWatchMetricsEnabled: true,
-        // You can configure other workgroup settings here
       },
-      // workGroupConfigurationUpdates: {
-      //   removeBytesScannedCutoffPerQuery: false,
-      //   enforceWorkGroupConfiguration: true,
-      //   requesterPaysEnabled: false,
-      //   resultConfigurationUpdates: {
-      //     outputLocation: `s3://${userDataBucket.bucketName}/athena-query-results/`,
-      //   },
-      // },
-      // Note: Directly setting the S3 bucket owner ID in the workgroup isn't standard.
-      // This is just to demonstrate how to reference the account ID.
-      // tags: [{ key: "OwnerAccountId", value: ownerAccountId }],
     });
 
     // ===============================================================================
