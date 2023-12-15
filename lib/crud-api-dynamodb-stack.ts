@@ -149,9 +149,10 @@ export class CrudApiDynamodbStack extends cdk.Stack {
             { name: "age", type: "string" },
             { name: "email", type: "string" },
           ],
-          location: `s3://${userDataBucket.bucketName}/data-lake/`, // Specify the S3 location of your data
+          // location: `s3://${userDataBucket.bucketName}/data-lake/`, // Specify the S3 location of your data
           // Add any other storage properties as needed
         },
+        tableType: "EXTERNAL_TABLE",
         // Define other table properties as needed
       },
     });
