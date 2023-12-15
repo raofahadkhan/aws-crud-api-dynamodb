@@ -182,6 +182,10 @@ export class CrudApiDynamodbStack extends cdk.Stack {
           },
         ],
       },
+      schedule: {
+        // scheduleExpression: "cron(0 0 * * ? *)", // Every day at midnight UTC
+        scheduleExpression: "cron(*/5 * * * ? *)", // Every 5 minutes
+      },
       // Define other properties like schedule, crawler name, etc., as needed
     });
     // const queryResultsLocation = `s3://${userDataBucket.bucketName}/athena-query-results/`; // Replace with your actual S3 bucket URL
