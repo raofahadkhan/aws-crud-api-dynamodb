@@ -140,7 +140,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       databaseName: glueDatabase.ref,
       catalogId: cdk.Aws.ACCOUNT_ID,
       tableInput: {
-        name: "my-glue-table",
+        name: "my-gluetable",
         // Define the table schema here based on your JSON data structure
         storageDescriptor: {
           columns: [
@@ -188,14 +188,14 @@ export class CrudApiDynamodbStack extends cdk.Stack {
         publishCloudWatchMetricsEnabled: true,
         // You can configure other workgroup settings here
       },
-      workGroupConfigurationUpdates: {
-        removeBytesScannedCutoffPerQuery: false,
-        enforceWorkGroupConfiguration: true,
-        requesterPaysEnabled: false,
-        resultConfigurationUpdates: {
-          outputLocation: `s3://${userDataBucket.bucketName}/athena-results/`,
-        },
-      },
+      // workGroupConfigurationUpdates: {
+      //   removeBytesScannedCutoffPerQuery: false,
+      //   enforceWorkGroupConfiguration: true,
+      //   requesterPaysEnabled: false,
+      //   resultConfigurationUpdates: {
+      //     outputLocation: `s3://${userDataBucket.bucketName}/athena-results/`,
+      //   },
+      // },
       // Note: Directly setting the S3 bucket owner ID in the workgroup isn't standard.
       // This is just to demonstrate how to reference the account ID.
       tags: [{ key: "OwnerAccountId", value: ownerAccountId }],
