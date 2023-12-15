@@ -77,6 +77,17 @@ export class CrudApiDynamodbStack extends cdk.Stack {
               ],
               resources: ["*"],
             }),
+            // New Policy Statement for DynamoDB Access
+            new iam.PolicyStatement({
+              actions: [
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:Query",
+                "dynamodb:DescribeTable", // Added DescribeTable Action
+                // Add any other DynamoDB actions the crawler might need
+              ],
+              resources: [userTable.tableArn],
+            }),
           ],
         }),
       },
