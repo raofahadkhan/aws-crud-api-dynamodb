@@ -1,14 +1,13 @@
 import * as apigwv2 from "@aws-cdk/aws-apigatewayv2-alpha";
 import * as apigwv2_integrations from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
 import * as cdk from "aws-cdk-lib";
+import * as athena from "aws-cdk-lib/aws-athena";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as glue from "aws-cdk-lib/aws-glue";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import * as iam from "aws-cdk-lib/aws-iam";
-import * as athena from "aws-cdk-lib/aws-athena";
-import * as glue from "aws-cdk-lib/aws-glue";
 
 export class CrudApiDynamodbStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -43,40 +42,6 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       versioned: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
-
-    // ===============================================================================
-    // LAMBDA: CREATED A LAMBDA FUNCTION TRIGGERD BY DYNAMODB STREAMS
-    // ===============================================================================
-
-    const dynamodbStreamLambda = new lambda.Function(
-      this,
-      `${service}-${stage}-dynamodb-stream-lambda`,
-      {
-        functionName: `${service}-${stage}-dynamodb-stream-lambda`,
-        runtime: lambda.Runtime.NODEJS_18_X,
-        handler: "StreamLambda.handler",
-        code: lambda.Code.fromAsset("lambda"),
-        environment: {
-          BUCKET_NAME: userDataBucket.bucketName,
-        },
-      }
-    );
-
-    // ===============================================================================
-    // CREATED A DYNAMODB STREAM EVENT SOURCE WHICH WILL TRIGGER THE LAMBDA
-    // ===============================================================================
-
-    const dynamodbStreamEventSource = new lambdaEventSources.DynamoEventSource(
-      userTable,
-      {
-        startingPosition: lambda.StartingPosition.TRIM_HORIZON,
-        batchSize: 1,
-        bisectBatchOnError: true,
-        retryAttempts: 10,
-      }
-    );
-
-    dynamodbStreamLambda.addEventSource(dynamodbStreamEventSource);
 
     // ===============================================================================
     // IAM: Created IAM POLICIES FOR GLUE AND ATHENA
@@ -122,6 +87,19 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       ],
     });
 
+    glueRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "dynamodb:GetItem",
+          "dynamodb:Scan",
+          "dynamodb:Query",
+          "dynamodb:DescribeTable",
+          // Add any other DynamoDB actions the crawler might need
+        ],
+        resources: [userTable.tableArn],
+      })
+    );
+
     const athenaRole = new iam.Role(this, `${service}-${stage}-athena-role`, {
       assumedBy: new iam.ServicePrincipal("athena.amazonaws.com"),
       description: "Role for Athena to access specific S3 bucket",
@@ -163,9 +141,9 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       role: glueRole.roleArn,
       databaseName: glueDatabase.ref,
       targets: {
-        s3Targets: [
+        dynamoDbTargets: [
           {
-            path: `s3://${userDataBucket.bucketName}/data-lake/`,
+            path: userTable.tableArn, // Specify the DynamoDB table ARN here
           },
         ],
       },
@@ -212,45 +190,17 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     });
 
     // ===============================================================================
-    // LAMBDA: CREATED LAMBDA FUNCTIONS FOR CRUD OPERATION
+    // LAMBDA: CREATED LAMBDA FUNCTIONS
     // ===============================================================================
 
-    const postLambda = new lambda.Function(
+    const createUserLambda = new lambda.Function(
       this,
-      `${service}-${stage}-post-lambda`,
+      `${service}-${stage}-create-user-lambda`,
       {
-        functionName: `${service}-${stage}-post-lambda`,
+        functionName: `${service}-${stage}-create-user-lambda`,
         runtime: lambda.Runtime.NODEJS_18_X,
         code: lambda.Code.fromAsset("lambda"),
         handler: "CreateUser.handler",
-        environment: {
-          TABLE_NAME: userTable.tableName,
-        },
-      }
-    );
-
-    const getLambda = new lambda.Function(
-      this,
-      `${service}-${stage}-get-lambda`,
-      {
-        functionName: `${service}-${stage}-get-lambda`,
-        runtime: lambda.Runtime.NODEJS_18_X,
-        code: lambda.Code.fromAsset("lambda"),
-        handler: "GetUser.handler",
-        environment: {
-          TABLE_NAME: userTable.tableName,
-        },
-      }
-    );
-
-    const updateAddressLambda = new lambda.Function(
-      this,
-      `${service}-${stage}-update-address-lambda`,
-      {
-        functionName: `${service}-${stage}-update-address-lambda`,
-        runtime: lambda.Runtime.NODEJS_18_X,
-        code: lambda.Code.fromAsset("lambda"),
-        handler: "UpdateAddress.handler",
         environment: {
           TABLE_NAME: userTable.tableName,
         },
@@ -261,21 +211,10 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     // CREATED APIGATEWAY INTEGRATION OF FUNCTION WITH APIGATEWAY
     // ===============================================================================
 
-    const postLambdaIntegration =
+    const createUserLambdaIntegration =
       new apigwv2_integrations.HttpLambdaIntegration(
-        `${service}-${stage}-post-lambda-integration`,
-        postLambda
-      );
-
-    const getLambdaIntegration = new apigwv2_integrations.HttpLambdaIntegration(
-      `${service}-${stage}-get-lambda-integration`,
-      getLambda
-    );
-
-    const updateAddressLambdaIntegration =
-      new apigwv2_integrations.HttpLambdaIntegration(
-        `${service}-${stage}-update-address-lambda-integration`,
-        updateAddressLambda
+        `${service}-${stage}-create-user-lambda-integration`,
+        createUserLambda
       );
 
     // ===============================================================================
@@ -285,33 +224,18 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     crudUserApi.addRoutes({
       path: "/create-user",
       methods: [apigwv2.HttpMethod.POST],
-      integration: postLambdaIntegration,
-    });
-
-    crudUserApi.addRoutes({
-      path: "/get-user",
-      methods: [apigwv2.HttpMethod.POST],
-      integration: getLambdaIntegration,
-    });
-
-    crudUserApi.addRoutes({
-      path: "/update-address",
-      methods: [apigwv2.HttpMethod.PUT],
-      integration: updateAddressLambdaIntegration,
+      integration: createUserLambdaIntegration,
     });
 
     // ===============================================================================
     // DYNAMODB AND S3 BUCKET ACCESS PERMISSIONS
     // ===============================================================================
 
-    userDataBucket.grantReadWrite(dynamodbStreamLambda);
-    userTable.grantFullAccess(postLambda);
-    userTable.grantFullAccess(getLambda);
-    userTable.grantFullAccess(updateAddressLambda);
+    userTable.grantFullAccess(createUserLambda);
 
-    //==================================================================
-    // Output API Gateway URL
-    //==================================================================
+    // ===============================================================================
+    // OUTPUT STATEMENT FOR API-GATEWAY URL
+    // ===============================================================================
 
     new cdk.CfnOutput(this, "ApiGatewayUrl", {
       value: crudUserApi.url!,
