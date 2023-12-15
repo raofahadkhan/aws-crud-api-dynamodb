@@ -93,12 +93,16 @@ export class CrudApiDynamodbStack extends cdk.Stack {
         "s3:ListBucket",
       ],
       // Replace with your S3 bucket ARN
-      resources: [
-        "arn:aws:s3:::crud-api-dynamodb-dev-bucket/*",
-        "arn:aws:s3:::crud-api-dynamodb-dev-bucket",
-      ],
+      resources: [`${userDataBucket.bucketArn}/*`, userDataBucket.bucketArn],
     });
     glueRole.addToPolicy(s3Policy);
+
+    const athenaRole = new iam.Role(this, "AthenaRole", {
+      assumedBy: new iam.ServicePrincipal("athena.amazonaws.com"),
+      description: "Role for Athena to access specific S3 bucket",
+    });
+
+    athenaRole.addToPolicy(s3Policy);
 
     // Policy for AWS Glue service actions
     const glueServicePolicy = new iam.PolicyStatement({
@@ -180,7 +184,16 @@ export class CrudApiDynamodbStack extends cdk.Stack {
         resultConfiguration: {
           outputLocation: `s3://${userDataBucket.bucketName}/athena-results/`,
         },
+        publishCloudWatchMetricsEnabled: true,
         // You can configure other workgroup settings here
+      },
+      workGroupConfigurationUpdates: {
+        removeBytesScannedCutoffPerQuery: false,
+        enforceWorkGroupConfiguration: true,
+        requesterPaysEnabled: false,
+        resultConfigurationUpdates: {
+          outputLocation: `s3://${userDataBucket.bucketName}/athena-results/`,
+        },
       },
     });
 
