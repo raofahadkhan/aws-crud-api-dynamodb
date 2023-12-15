@@ -171,7 +171,8 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       },
       // Define other properties like schedule, crawler name, etc., as needed
     });
-
+    // Get the AWS account ID
+    const ownerAccountId = cdk.Aws.ACCOUNT_ID;
     // Create an Athena Workgroup
     const workgroup = new athena.CfnWorkGroup(this, "AthenaWorkgroup", {
       name: "your-workgroup-name", // Replace with your workgroup name
@@ -195,6 +196,9 @@ export class CrudApiDynamodbStack extends cdk.Stack {
           outputLocation: `s3://${userDataBucket.bucketName}/athena-results/`,
         },
       },
+      // Note: Directly setting the S3 bucket owner ID in the workgroup isn't standard.
+      // This is just to demonstrate how to reference the account ID.
+      tags: [{ key: "OwnerAccountId", value: ownerAccountId }],
     });
 
     // ===============================================================================
