@@ -185,7 +185,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
         // Configure query result location
         enforceWorkGroupConfiguration: true,
         resultConfiguration: {
-          outputLocation: `s3://${userDataBucket.bucketName}/athena-query-result/`,
+          outputLocation: `s3://${userDataBucket.bucketName}/athena-query-results/`,
           expectedBucketOwner: cdk.Aws.ACCOUNT_ID,
         },
         publishCloudWatchMetricsEnabled: true,
