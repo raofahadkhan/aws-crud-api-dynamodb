@@ -143,7 +143,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       targets: {
         dynamoDbTargets: [
           {
-            path: userTable.tableArn, // Specify the DynamoDB table ARN here
+            path: userTable.tableName, // Specify the DynamoDB table ARN here
           },
         ],
       },
