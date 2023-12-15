@@ -171,7 +171,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       },
       // Define other properties like schedule, crawler name, etc., as needed
     });
-    const queryResultsLocation = `s3://${userDataBucket.bucketName}/athena-results/`; // Replace with your actual S3 bucket URL
+    const queryResultsLocation = `s3://${userDataBucket.bucketName}/athena-query-results/`; // Replace with your actual S3 bucket URL
     // // Get the AWS account ID
     // const ownerAccountId = cdk.Aws.ACCOUNT_ID;
     // Create an Athena Workgroup
@@ -184,7 +184,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
         // Configure query result location
         enforceWorkGroupConfiguration: true,
         resultConfiguration: {
-          outputLocation: `s3://${userDataBucket.bucketName}/athena-results/`,
+          outputLocation: `s3://${userDataBucket.bucketName}/athena-query-results/`,
         },
         publishCloudWatchMetricsEnabled: true,
         // You can configure other workgroup settings here
@@ -194,7 +194,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       //   enforceWorkGroupConfiguration: true,
       //   requesterPaysEnabled: false,
       //   resultConfigurationUpdates: {
-      //     outputLocation: `s3://${userDataBucket.bucketName}/athena-results/`,
+      //     outputLocation: `s3://${userDataBucket.bucketName}/athena-query-results/`,
       //   },
       // },
       // Note: Directly setting the S3 bucket owner ID in the workgroup isn't standard.
