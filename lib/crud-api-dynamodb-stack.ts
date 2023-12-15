@@ -165,7 +165,7 @@ export class CrudApiDynamodbStack extends cdk.Stack {
       targets: {
         s3Targets: [
           {
-            path: `s3://${userDataBucket.bucketName}/`, // Path to the root of the S3 bucket
+            path: `s3://${userDataBucket.bucketName}/data-lake/`, // Path to the root of the S3 bucket
           },
         ],
       },
