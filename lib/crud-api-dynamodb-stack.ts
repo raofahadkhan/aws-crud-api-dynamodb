@@ -82,49 +82,61 @@ export class CrudApiDynamodbStack extends cdk.Stack {
     const glueRole = new iam.Role(this, "GlueRole", {
       assumedBy: new iam.ServicePrincipal("glue.amazonaws.com"),
       description: "Role for AWS Glue to access S3 and Glue services",
-    });
-
-    // Policy to allow Glue to access the specific S3 bucket
-    const s3Policy = new iam.PolicyStatement({
-      actions: [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject",
-        "s3:ListBucket",
+      inlinePolicies: {
+        GlueS3Access: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject",
+                "s3:ListBucket",
+              ],
+              resources: [
+                `${userDataBucket.bucketArn}/*`,
+                userDataBucket.bucketArn,
+              ],
+            }),
+            new iam.PolicyStatement({
+              actions: [
+                "glue:Get*",
+                "glue:Put*",
+                "glue:Create*",
+                "glue:Update*",
+                "glue:Delete*",
+                "glue:BatchCreatePartition",
+                "glue:BatchGetPartition",
+              ],
+              resources: ["*"],
+            }),
+          ],
+        }),
+      },
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName(
+          "service-role/AWSGlueServiceRole"
+        ),
       ],
-      // Replace with your S3 bucket ARN
-      resources: [`${userDataBucket.bucketArn}/*`, userDataBucket.bucketArn],
     });
-    glueRole.addToPolicy(s3Policy);
 
+    // Create IAM Role for Athena
     const athenaRole = new iam.Role(this, "AthenaRole", {
       assumedBy: new iam.ServicePrincipal("athena.amazonaws.com"),
       description: "Role for Athena to access specific S3 bucket",
+      inlinePolicies: {
+        AthenaS3Access: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
+              resources: [
+                `${userDataBucket.bucketArn}/*`,
+                userDataBucket.bucketArn,
+              ],
+            }),
+          ],
+        }),
+      },
     });
-
-    athenaRole.addToPolicy(s3Policy);
-
-    // Policy for AWS Glue service actions
-    const glueServicePolicy = new iam.PolicyStatement({
-      actions: [
-        "glue:Get*",
-        "glue:Put*",
-        "glue:Create*",
-        "glue:Update*",
-        "glue:Delete*",
-        "glue:BatchCreatePartition",
-        "glue:BatchGetPartition",
-      ],
-      resources: ["*"],
-    });
-    glueRole.addToPolicy(glueServicePolicy);
-
-    // Attach AWS managed policy for Glue Service Role
-    glueRole.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName(
-        "service-role/AWSGlueServiceRole"
-      )
-    );
 
     // ===============================================================================
     // GLUE: Create a Glue Database for cataloging tables
