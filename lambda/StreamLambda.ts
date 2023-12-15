@@ -21,8 +21,7 @@ export const handler = async (event: DynamoDBStreamEvent) => {
       email: data!.email.S,
     };
 
-    console.log("desired format===>", dataToPut);
-    const key = `${record.eventID}.json`;
+    const key = `data-lake/${record.eventID}.json`;
 
     const params = {
       Bucket: bucketName,
