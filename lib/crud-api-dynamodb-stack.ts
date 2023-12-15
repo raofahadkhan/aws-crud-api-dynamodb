@@ -113,16 +113,44 @@ export class CrudApiDynamodbStack extends cdk.Stack {
 
     const athenaRole = new iam.Role(this, `${service}-${stage}-athena-role`, {
       assumedBy: new iam.ServicePrincipal("athena.amazonaws.com"),
-      description: "Role for Athena to access specific S3 bucket",
+      description:
+        "Role for Athena to access specific S3 bucket and Glue Data Catalog",
       inlinePolicies: {
-        AthenaS3Access: new iam.PolicyDocument({
+        AthenaGlueS3Access: new iam.PolicyDocument({
           statements: [
             new iam.PolicyStatement({
-              actions: ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
+              actions: [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:ListBucket",
+                "s3:GetBucketLocation",
+              ],
               resources: [
                 `${userDataBucket.bucketArn}/*`,
                 userDataBucket.bucketArn,
               ],
+            }),
+            new iam.PolicyStatement({
+              actions: [
+                "glue:GetDatabase",
+                "glue:GetDatabases",
+                "glue:GetTable",
+                "glue:GetTables",
+                "glue:SearchTables",
+                "glue:GetPartition",
+                "glue:GetPartitions",
+              ],
+              resources: ["*"],
+            }),
+            new iam.PolicyStatement({
+              actions: [
+                "athena:GetWorkGroup",
+                "athena:StartQueryExecution",
+                "athena:StopQueryExecution",
+                "athena:GetQueryExecution",
+                "athena:GetQueryResults",
+              ],
+              resources: ["*"],
             }),
           ],
         }),
