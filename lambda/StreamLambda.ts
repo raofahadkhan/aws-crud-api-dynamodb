@@ -13,12 +13,12 @@ export const handler = async (event: DynamoDBStreamEvent) => {
   }
 
   for (const record of event.Records) {
-    const data = record.dynamodb!.NewImage;
+    const data = record.dynamodb!.NewImage!;
     const dataToPut = {
-      user_id: data.user_id.S,
-      name: data.name.S,
-      age: data.age.N,
-      email: data.email.S,
+      user_id: data!.user_id.S,
+      name: data!.name.S,
+      age: data!.age.N,
+      email: data!.email.S,
     };
 
     console.log("desired format===>", dataToPut);
